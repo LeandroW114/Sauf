@@ -377,7 +377,7 @@
   <section class="view menu is-active" id="menuView">
     <div class="menu-head">
       <h1>Sauf®</h1>
-      <p>Minenfeld — Wählt euer Level</p>
+      <p id="menuTagline">Minenfeld — Wählt euer Level</p>
     </div>
     <nav class="menu-list" id="menuList">
       <button type="button" data-cat="standard">
@@ -442,7 +442,17 @@
         "Alle, die heute schon Energy hatten, trinken 1 — du trinkst 2.",
         "Stoß mit der Person rechts von dir an. Ihr trinkt beide 2.",
         "Wer von euch zuletzt gelacht hat, trinkt 2 — wenn du es warst, trinke 3.",
-        "Trinke 1 Schluck für jede Person am Tisch, die ein schwarzes Teil trägt."
+        "Trinke 1 Schluck für jede Person am Tisch, die ein schwarzes Teil trägt.",
+        "Wer Sneaker trägt, trinkt 2.",
+        "iPhone? Trink 1. Android? Verteil 1.",
+        "Kleinste Person am Tisch verteilt 3.",
+        "Alle mit Cap oder Mütze: 2 Schlucke.",
+        "Dein Glas ist voller als das deines linken Nachbarn? Trink 2.",
+        "Wer Ringe trägt, trinkt 1 pro Ring — max. 3.",
+        "Beine übereinandergeschlagen? Trink 2.",
+        "Handy in der Hosentasche? Trink 2.",
+        "Jüngste Person am Tisch: verteile 2.",
+        "Weiße Socken? 2 Schlucke."
       ]
     },
     mittel: {
@@ -454,7 +464,17 @@
         "Waterfall: Alle trinken gleichzeitig — du darfst erst aufhören, wenn beide Nachbarn abgesetzt haben.",
         "Tausche dein Getränk mit der Person links von dir und trinke 3.",
         "Du übernimmst die Aux bis zur nächsten Mine. Jeder Skip kostet dich 2 Schlucke.",
-        "Alle zeigen auf dich. Trinke so viele Schlucke, wie Finger auf dich zeigen."
+        "Alle zeigen auf dich. Trinke so viele Schlucke, wie Finger auf dich zeigen.",
+        "Tattoo sichtbar? Verteile 4. Keins? Trink 3.",
+        "Akku unter 50 %? Trink 4.",
+        "Schwarz an? Trink 3. Komplett in Schwarz? Verteile 5.",
+        "Beide Nachbarn haben vollere Gläser als du? Trink 4.",
+        "Schuhe an? 3 Schlucke. Barfuß oder Socken? Verteile 3.",
+        "Handy liegt auf dem Tisch? Trink 4.",
+        "Uhr am Handgelenk? Verteile 4. Keine? Trink 3.",
+        "Piercing? Verteile 4. Keins? Trink 3.",
+        "Glas fast leer? Auffüllen und 4 trinken.",
+        "Wer zuerst 'Prost' ruft, verteilt 5 — alle anderen trinken 2."
       ]
     },
     extrem: {
@@ -466,7 +486,17 @@
         "Shot-Time: Du und die Person gegenüber. Sofort.",
         "Trinke 6 und sprich bis zur nächsten Mine nur im Flüsterton. Jeder Verstoß: 2 extra.",
         "Doppelzünder: Trinke 5 und bestimme eine Person, die mitzieht.",
-        "Dein Handy liegt bis zur nächsten Mine in der Mitte. Trinke 5 zum Abschied."
+        "Dein Handy liegt bis zur nächsten Mine in der Mitte. Trinke 5 zum Abschied.",
+        "Kein Feuerzeug dabei? Ex dein Glas.",
+        "Akku unter 20 %? Ex. Über 80 %? Verteile 8.",
+        "Wer als Letztes den Tisch berührt, ext sein Glas.",
+        "Rotes Kleidungsstück? Verteile 6. Keins? Trink 6.",
+        "Dein linker Nachbar entscheidet: 8 Schlucke oder ex.",
+        "Brille auf? Trink 6. Keine? Verteile 4.",
+        "Handyhülle drauf? Trink 5. Ohne Hülle? Ex.",
+        "Wer am weitesten vom Klo sitzt, trinkt 7.",
+        "Wer als Letztes aufsteht, trinkt 7.",
+        "Dreckige Sneaker? Ex. Cleane? Verteile 6."
       ]
     },
     intim: {
@@ -478,7 +508,17 @@
         "Beantworte ehrlich oder trinke 6: Dein Body Count — die echte Zahl.",
         "Beantworte ehrlich oder trinke 4: Hast du schon mal für jemanden hier geschwärmt — und für wen?",
         "Beantworte ehrlich oder trinke 5: Was ist das Wildeste, das du je gemacht hast?",
-        "Beantworte ehrlich oder trinke 6: Mit wem aus dieser Runde hattest du schon was — oder hättest es gern?"
+        "Beantworte ehrlich oder trinke 6: Mit wem aus dieser Runde hattest du schon was — oder hättest es gern?",
+        "Beantworte oder trink 5: An wen hast du heute beim Aufwachen gedacht?",
+        "Beantworte oder trink 4: Letzter Kuss — wann und mit wem?",
+        "Beantworte oder trink 6: Schon mal was mit zwei Leuten aus demselben Freundeskreis gehabt?",
+        "Beantworte oder trink 5: Ungewöhnlichster Ort, an dem du es getan hast?",
+        "Beantworte oder trink 4: Wen hier hast du schon mal auf Insta gestalkt?",
+        "Beantworte oder trink 6: Schon mal beim Sexting erwischt worden?",
+        "Zeig dein letztes Like bei jemandem, den du heiß findest — oder trink 5.",
+        "Beantworte oder trink 4: Dein Turn-on Nummer eins?",
+        "Beantworte oder trink 6: Schon mal jemanden geghostet, nachdem ihr was hattet?",
+        "Beantworte oder trink 5: Wer hier hat das beste Date-Potenzial?"
       ]
     }
   };
@@ -669,6 +709,18 @@
   resetBtn.addEventListener("click", () => {
     penaltyEl.classList.remove("is-visible");
     buildBoard();
+  });
+
+  /* ── Aufgaben-Zähler im Menü ───────────── */
+  // Zählt automatisch mit, sobald die Task-Arrays wachsen
+  const totalTasks = Object.values(CATEGORIES)
+    .reduce((sum, cat) => sum + cat.tasks.length, 0);
+  const rounded = Math.floor(totalTasks / 10) * 10;
+  document.getElementById("menuTagline").textContent =
+    `Minenfeld — Über ${rounded} Aufgaben`;
+  document.querySelectorAll("#menuList button[data-cat]").forEach((btn) => {
+    const sub = btn.querySelector(".sub");
+    sub.textContent += ` · ${CATEGORIES[btn.dataset.cat].tasks.length}`;
   });
 
   /* ── PWA: Offline-Betrieb ──────────────── */
