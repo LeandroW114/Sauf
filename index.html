@@ -4,14 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#000000">
-<title>SAUF — Das Deck</title>
+<title>SAUF — Minenfeld</title>
 <style>
   :root {
     --bg: #000000;
     --fg: #ffffff;
     --muted: rgba(255, 255, 255, 0.4);
     --line: rgba(255, 255, 255, 0.14);
-    --card-bg: #0a0a0a;
+    --tile: #121212;
+    --tile-active: #1a1a1a;
+    --safe: #2dff88;
+    --danger: #ff1f3d;
   }
 
   * {
@@ -34,7 +37,7 @@
     -webkit-font-smoothing: antialiased;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
+    touch-action: manipulation;
     display: flex;
     flex-direction: column;
   }
@@ -45,130 +48,179 @@
     justify-content: space-between;
     align-items: center;
     padding: max(20px, env(safe-area-inset-top)) 24px 0;
-    letter-spacing: 0.18em;
     font-size: 11px;
     font-weight: 700;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
   }
 
-  header .brand { color: var(--fg); }
-  header .counter {
+  header .status {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── Stage ────────────────────────────── */
+  /* ── Spielfeld ────────────────────────── */
   main {
     flex: 1;
     display: grid;
     place-items: center;
     padding: 24px;
-    perspective: 1200px;
   }
 
-  .card {
-    position: relative;
-    width: min(88vw, 420px);
-    aspect-ratio: 3 / 4.2;
-    max-height: 68vh;
-    background: var(--card-bg);
+  .board {
+    width: min(88vw, 400px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .tile {
+    aspect-ratio: 1;
+    background: var(--tile);
     border: 1px solid var(--line);
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 28px;
-    cursor: grab;
-    will-change: transform, opacity;
-    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9);
-  }
-
-  .card:active { cursor: grabbing; }
-
-  .card.is-animating {
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 10px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
     transition:
-      transform 0.55s cubic-bezier(0.17, 0.67, 0.3, 1),
-      opacity 0.45s ease-out;
+      background 0.25s ease,
+      border-color 0.25s ease,
+      opacity 0.45s ease 0.25s,
+      transform 0.45s ease 0.25s;
   }
 
-  .card.is-resetting {
-    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  .tile:active { background: var(--tile-active); }
+
+  .tile.is-safe {
+    background: rgba(45, 255, 136, 0.12);
+    border-color: rgba(45, 255, 136, 0.5);
+    color: var(--safe);
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
   }
 
-  .card.is-entering {
-    animation: enter 0.45s ease-out both;
+  .tile.is-mine {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--bg);
   }
 
-  @keyframes enter {
-    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  .board.is-locked .tile { pointer-events: none; }
+
+  /* ── Detonation ───────────────────────── */
+  .flash {
+    position: fixed;
+    inset: 0;
+    background: var(--danger);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  body.is-detonating .flash {
+    animation: flash 0.7s ease-out;
+  }
+
+  @keyframes flash {
+    0%   { opacity: 0; }
+    12%  { opacity: 0.95; }
+    30%  { opacity: 0.35; }
+    45%  { opacity: 0.75; }
+    100% { opacity: 0; }
+  }
+
+  body.is-detonating main {
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes shake {
+    10%, 90%      { transform: translate(-2px, 1px); }
+    20%, 80%      { transform: translate(5px, -2px); }
+    30%, 50%, 70% { transform: translate(-9px, 3px); }
+    40%, 60%      { transform: translate(9px, -3px); }
+    100%          { transform: translate(0, 0); }
+  }
+
+  /* ── Strafkarte ───────────────────────── */
+  .penalty {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .penalty.is-visible { display: flex; }
+
+  .penalty .card {
+    width: min(88vw, 420px);
+    background: var(--bg);
+    border: 1px solid var(--danger);
+    padding: 32px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9);
+    animation: card-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.1) 0.15s both;
+  }
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  .card .kicker {
+  .penalty .kicker {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.3em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--danger);
   }
 
-  .card .task {
-    font-size: clamp(26px, 7.5vw, 40px);
+  .penalty .text {
+    font-size: clamp(24px, 6.5vw, 36px);
     font-weight: 900;
-    line-height: 1.08;
+    line-height: 1.1;
     letter-spacing: -0.02em;
     text-transform: uppercase;
     text-wrap: balance;
   }
 
-  .card .index {
-    align-self: flex-end;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ── End screen ───────────────────────── */
-  .end {
-    position: fixed;
-    inset: 0;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-    background: var(--bg);
-    text-align: center;
-    padding: 24px;
-  }
-
-  .end.is-visible { display: flex; animation: enter 0.5s ease-out both; }
-
-  .end h2 {
-    font-size: clamp(40px, 12vw, 88px);
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    text-transform: uppercase;
-    line-height: 0.95;
-  }
-
-  .end button {
-    background: var(--fg);
-    color: var(--bg);
+  .penalty .reset {
+    background: none;
     border: 0;
     font: inherit;
-    font-size: 12px;
-    font-weight: 800;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 0.25em;
     text-transform: uppercase;
-    padding: 18px 44px;
+    color: var(--muted);
     cursor: pointer;
+    padding: 12px 20px;
+    animation: card-in 0.4s ease 0.4s both;
+    transition: color 0.2s ease;
   }
 
-  .end button:active { transform: scale(0.97); }
+  .penalty .reset:hover,
+  .penalty .reset:focus-visible { color: var(--fg); }
+  .penalty .reset:focus-visible { outline: 1px solid var(--line); }
+  .penalty .reset:active { transform: scale(0.96); }
 
-  /* ── Footer hint ──────────────────────── */
+  /* ── Footer ───────────────────────────── */
   footer {
     padding: 0 24px max(20px, env(safe-area-inset-bottom));
     text-align: center;
@@ -178,151 +230,118 @@
     text-transform: uppercase;
     color: var(--muted);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.is-detonating main { animation: none; }
+    body.is-detonating .flash { animation-duration: 0.2s; }
+  }
 </style>
 </head>
 <body>
 
   <header>
-    <span class="brand">SAUF®</span>
-    <span class="counter" id="counter"></span>
+    <span class="brand">SAUF® MINENFELD</span>
+    <span class="status" id="status"></span>
   </header>
 
-  <main id="stage">
-    <article class="card" id="card">
-      <span class="kicker">Aufgabe</span>
-      <p class="task" id="task"></p>
-      <span class="index" id="cardIndex"></span>
-    </article>
+  <main>
+    <div class="board" id="board"></div>
   </main>
 
-  <footer>Swipe zum Weiterspielen</footer>
+  <footer>Ein Feld ist scharf. Tippt reihum.</footer>
 
-  <div class="end" id="end">
-    <h2>Deck<br>Leer.</h2>
-    <button id="restart" type="button">Nochmal</button>
+  <div class="flash"></div>
+
+  <div class="penalty" id="penalty">
+    <div class="card">
+      <span class="kicker">Mine getroffen</span>
+      <p class="text" id="penaltyText"></p>
+    </div>
+    <button class="reset" id="reset" type="button">Neue Runde</button>
   </div>
 
 <script>
 (() => {
   "use strict";
 
-  const TASKS = [
-    "Wer das teuerste Outfit anhat, verteilt 3 Schlucke.",
-    "Jeder, der heute schon Energy getrunken hat, trinkt 2.",
-    "Der letzte, der sein Handy zückt, verteilt 4 Schlucke.",
-    "Wer schon mal auf einem Festival gezeltet hat, darf 2 Schlucke verteilen.",
-    "Alle mit weißen Sneakern trinken 2 — Respekt an den Mut.",
-    "Wer als Nächstes ein Foto für die Story macht, trinkt 3.",
-    "Line-up-Check: Wer keinen Act des Abends nennen kann, trinkt 5."
+  const TILE_COUNT = 12; // 3 x 4
+
+  const PENALTIES = [
+    "Minenopfer. Trinke 3 Schlucke und tu so, als wäre nichts gewesen.",
+    "Volltreffer. 5 Schlucke — und die nächste Runde spielst du auf den Knien.",
+    "Boom. Tausche dein Getränk mit der Person links von dir und trinke 2.",
+    "Detoniert. Trinke 4 und übernimm die Aux — jeder Skip kostet dich einen Schluck.",
+    "Alle zeigen jetzt auf dich. Trinke so viele Schlucke, wie Finger auf dich zeigen.",
+    "Kaboom. 5 Schlucke, und dein Handy liegt bis zur nächsten Mine in der Mitte.",
+    "Direkter Treffer. Ex dein Getränk oder trinke 6 — deine Wahl, Soldat."
   ];
 
-  const SWIPE_THRESHOLD = 90;     // px, ab hier fliegt die Karte
-  const VELOCITY_THRESHOLD = 0.6; // px/ms, schneller Flick reicht auch
+  const board = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const penaltyEl = document.getElementById("penalty");
+  const penaltyText = document.getElementById("penaltyText");
+  const resetBtn = document.getElementById("reset");
 
-  const card = document.getElementById("card");
-  const taskEl = document.getElementById("task");
-  const counterEl = document.getElementById("counter");
-  const indexEl = document.getElementById("cardIndex");
-  const endEl = document.getElementById("end");
-  const restartBtn = document.getElementById("restart");
+  let mineIndex = -1;
+  let remaining = TILE_COUNT;
+  let exploded = false;
 
-  let index = 0;
-  let locked = false;
-
-  const drag = { active: false, startX: 0, startY: 0, dx: 0, dy: 0, startTime: 0 };
-
-  function render() {
-    taskEl.textContent = TASKS[index];
-    counterEl.textContent = `Karte ${index + 1}/${TASKS.length}`;
-    indexEl.textContent = String(index + 1).padStart(2, "0");
+  function updateStatus() {
+    statusEl.textContent = `${remaining}/${TILE_COUNT} Felder`;
   }
 
-  function setTransform(dx, dy) {
-    const rotate = dx * 0.06;
-    card.style.transform = `translate(${dx}px, ${dy * 0.35}px) rotate(${rotate}deg)`;
-  }
+  function buildBoard() {
+    board.innerHTML = "";
+    board.classList.remove("is-locked");
+    mineIndex = Math.floor(Math.random() * TILE_COUNT);
+    remaining = TILE_COUNT;
+    exploded = false;
 
-  function showNextCard() {
-    index += 1;
-    if (index >= TASKS.length) {
-      endEl.classList.add("is-visible");
-      return;
+    for (let i = 0; i < TILE_COUNT; i++) {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "tile";
+      tile.textContent = String(i + 1).padStart(2, "0");
+      tile.addEventListener("click", () => onTileTap(tile, i), { once: true });
+      board.appendChild(tile);
     }
-    render();
-    card.classList.remove("is-animating");
-    card.style.transform = "";
-    card.style.opacity = "";
-    card.classList.add("is-entering");
-    card.addEventListener("animationend", () => {
-      card.classList.remove("is-entering");
-      locked = false;
-    }, { once: true });
+    updateStatus();
   }
 
-  function flyOut(direction) {
-    locked = true;
-    const distance = window.innerWidth * 1.4;
-    const rotate = 32 * direction;
-    card.classList.add("is-animating");
-    card.style.transform =
-      `translate(${distance * direction}px, ${drag.dy * 0.35 - 60}px) rotate(${rotate}deg)`;
-    card.style.opacity = "0";
-    card.addEventListener("transitionend", showNextCard, { once: true });
-  }
-
-  function snapBack() {
-    card.classList.add("is-resetting");
-    card.style.transform = "";
-    card.addEventListener("transitionend", () => {
-      card.classList.remove("is-resetting");
-    }, { once: true });
-  }
-
-  function onPointerDown(e) {
-    if (locked) return;
-    drag.active = true;
-    drag.startX = e.clientX;
-    drag.startY = e.clientY;
-    drag.dx = 0;
-    drag.dy = 0;
-    drag.startTime = performance.now();
-    card.classList.remove("is-resetting", "is-animating");
-    card.setPointerCapture(e.pointerId);
-  }
-
-  function onPointerMove(e) {
-    if (!drag.active || locked) return;
-    drag.dx = e.clientX - drag.startX;
-    drag.dy = e.clientY - drag.startY;
-    setTransform(drag.dx, drag.dy);
-  }
-
-  function onPointerUp() {
-    if (!drag.active || locked) return;
-    drag.active = false;
-    const elapsed = performance.now() - drag.startTime;
-    const velocity = Math.abs(drag.dx) / Math.max(elapsed, 1);
-
-    if (Math.abs(drag.dx) > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-      flyOut(drag.dx >= 0 ? 1 : -1);
+  function onTileTap(tile, i) {
+    if (exploded) return;
+    if (i === mineIndex) {
+      detonate(tile);
     } else {
-      snapBack();
+      tile.classList.add("is-safe");
+      remaining -= 1;
+      updateStatus();
     }
   }
 
-  card.addEventListener("pointerdown", onPointerDown);
-  card.addEventListener("pointermove", onPointerMove);
-  card.addEventListener("pointerup", onPointerUp);
-  card.addEventListener("pointercancel", onPointerUp);
+  function detonate(tile) {
+    exploded = true;
+    board.classList.add("is-locked");
+    tile.classList.add("is-mine");
 
-  restartBtn.addEventListener("click", () => {
-    endEl.classList.remove("is-visible");
-    index = -1;
-    locked = false;
-    showNextCard();
+    if (navigator.vibrate) navigator.vibrate([120, 60, 200]);
+
+    document.body.classList.add("is-detonating");
+    setTimeout(() => document.body.classList.remove("is-detonating"), 750);
+
+    setTimeout(() => {
+      penaltyText.textContent =
+        PENALTIES[Math.floor(Math.random() * PENALTIES.length)];
+      penaltyEl.classList.add("is-visible");
+    }, 650);
+  }
+
+  resetBtn.addEventListener("click", () => {
+    penaltyEl.classList.remove("is-visible");
+    buildBoard();
   });
 
-  render();
+  buildBoard();
 })();
 </script>
 </body>
