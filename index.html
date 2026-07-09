@@ -10,6 +10,7 @@
     --bg: #000000;
     --fg: #ffffff;
     --muted: rgba(255, 255, 255, 0.4);
+    --faint: rgba(255, 255, 255, 0.22);
     --line: rgba(255, 255, 255, 0.14);
     --tile: #121212;
     --tile-active: #1a1a1a;
@@ -38,12 +39,136 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    display: flex;
-    flex-direction: column;
   }
 
-  /* ── Header ───────────────────────────── */
-  header {
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  /* ── Views ────────────────────────────── */
+  .view {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.28s ease;
+  }
+
+  .view.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .view.is-leaving {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+
+  /* ── Hauptmenü ────────────────────────── */
+  .menu {
+    justify-content: center;
+    gap: 56px;
+    padding: 24px;
+  }
+
+  .menu-head { text-align: left; width: min(88vw, 420px); margin: 0 auto; }
+
+  .menu-head h1 {
+    font-size: clamp(56px, 18vw, 96px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .menu-head p {
+    margin-top: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .menu-list {
+    width: min(88vw, 420px);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .menu-list button {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    text-align: left;
+    border: 1px solid var(--line);
+    padding: 20px 22px;
+    text-transform: uppercase;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .menu-list .num {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .menu-list .name {
+    font-size: clamp(20px, 5.5vw, 28px);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .menu-list .sub {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .menu-list button:hover,
+  .menu-list button:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+
+  .menu-list button:hover .num,
+  .menu-list button:hover .sub,
+  .menu-list button:focus-visible .num,
+  .menu-list button:focus-visible .sub { color: rgba(0, 0, 0, 0.5); }
+
+  .menu-list button:focus-visible { outline: none; }
+  .menu-list button:active { transform: scale(0.99); }
+
+  .menu-list button.is-adult { border-color: rgba(255, 31, 61, 0.45); }
+  .menu-list button.is-adult .name { color: var(--danger); }
+  .menu-list button.is-adult:hover,
+  .menu-list button.is-adult:focus-visible {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--bg);
+  }
+  .menu-list button.is-adult:hover .name,
+  .menu-list button.is-adult:focus-visible .name { color: var(--bg); }
+
+  /* ── Spiel ────────────────────────────── */
+  .game header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -54,13 +179,22 @@
     text-transform: uppercase;
   }
 
-  header .status {
+  .game .back {
+    padding: 4px 0;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    transition: color 0.2s ease;
+  }
+
+  .game .back:hover,
+  .game .back:focus-visible { color: var(--fg); outline: none; }
+
+  .game .status {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── Spielfeld ────────────────────────── */
-  main {
+  .game main {
     flex: 1;
     display: grid;
     place-items: center;
@@ -87,7 +221,6 @@
     letter-spacing: 0.18em;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
-    cursor: pointer;
     transition:
       background 0.25s ease,
       border-color 0.25s ease,
@@ -114,6 +247,16 @@
 
   .board.is-locked .tile { pointer-events: none; }
 
+  .game footer {
+    padding: 0 24px max(20px, env(safe-area-inset-bottom));
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
   /* ── Detonation ───────────────────────── */
   .flash {
     position: fixed;
@@ -124,9 +267,7 @@
     z-index: 10;
   }
 
-  body.is-detonating .flash {
-    animation: flash 0.7s ease-out;
-  }
+  body.is-detonating .flash { animation: flash 0.7s ease-out; }
 
   @keyframes flash {
     0%   { opacity: 0; }
@@ -136,7 +277,7 @@
     100% { opacity: 0; }
   }
 
-  body.is-detonating main {
+  body.is-detonating .game main {
     animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
   }
 
@@ -201,15 +342,11 @@
   }
 
   .penalty .reset {
-    background: none;
-    border: 0;
-    font: inherit;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.25em;
     text-transform: uppercase;
     color: var(--muted);
-    cursor: pointer;
     padding: 12px 20px;
     animation: card-in 0.4s ease 0.4s both;
     transition: color 0.2s ease;
@@ -220,41 +357,62 @@
   .penalty .reset:focus-visible { outline: 1px solid var(--line); }
   .penalty .reset:active { transform: scale(0.96); }
 
-  /* ── Footer ───────────────────────────── */
-  footer {
-    padding: 0 24px max(20px, env(safe-area-inset-bottom));
-    text-align: center;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    body.is-detonating main { animation: none; }
+    body.is-detonating .game main { animation: none; }
     body.is-detonating .flash { animation-duration: 0.2s; }
+    .view { transition-duration: 0.01s; }
   }
 </style>
 </head>
 <body>
 
-  <header>
-    <span class="brand">SAUF® MINENFELD</span>
-    <span class="status" id="status"></span>
-  </header>
+  <!-- ── Hauptmenü ── -->
+  <section class="view menu is-active" id="menuView">
+    <div class="menu-head">
+      <h1>Sauf®</h1>
+      <p>Minenfeld — Wählt euer Level</p>
+    </div>
+    <nav class="menu-list" id="menuList">
+      <button type="button" data-cat="standard">
+        <span class="num">01</span>
+        <span class="name">Standard</span>
+        <span class="sub">Lockeres Vorglühen</span>
+      </button>
+      <button type="button" data-cat="mittel">
+        <span class="num">02</span>
+        <span class="name">Mittel</span>
+        <span class="sub">Es zieht an</span>
+      </button>
+      <button type="button" data-cat="extrem">
+        <span class="num">03</span>
+        <span class="name">Extrem</span>
+        <span class="sub">Keine Gnade</span>
+      </button>
+      <button type="button" data-cat="intim" class="is-adult">
+        <span class="num">04</span>
+        <span class="name">+18 Intim</span>
+        <span class="sub">Wahrheit oder Trinken</span>
+      </button>
+    </nav>
+  </section>
 
-  <main>
-    <div class="board" id="board"></div>
-  </main>
-
-  <footer>Ein Feld ist scharf. Tippt reihum.</footer>
+  <!-- ── Spielfeld ── -->
+  <section class="view game" id="gameView">
+    <header>
+      <button class="back" id="backBtn" type="button">&larr; Menü</button>
+      <span class="status" id="status"></span>
+    </header>
+    <main>
+      <div class="board" id="board"></div>
+    </main>
+    <footer>Ein Feld ist scharf. Tippt reihum.</footer>
+  </section>
 
   <div class="flash"></div>
 
   <div class="penalty" id="penalty">
     <div class="card">
-      <span class="kicker">Mine getroffen</span>
+      <span class="kicker" id="penaltyKicker">Mine getroffen</span>
       <p class="text" id="penaltyText"></p>
     </div>
     <button class="reset" id="reset" type="button">Neue Runde</button>
@@ -266,28 +424,164 @@
 
   const TILE_COUNT = 12; // 3 x 4
 
-  const PENALTIES = [
-    "Minenopfer. Trinke 3 Schlucke und tu so, als wäre nichts gewesen.",
-    "Volltreffer. 5 Schlucke — und die nächste Runde spielst du auf den Knien.",
-    "Boom. Tausche dein Getränk mit der Person links von dir und trinke 2.",
-    "Detoniert. Trinke 4 und übernimm die Aux — jeder Skip kostet dich einen Schluck.",
-    "Alle zeigen jetzt auf dich. Trinke so viele Schlucke, wie Finger auf dich zeigen.",
-    "Kaboom. 5 Schlucke, und dein Handy liegt bis zur nächsten Mine in der Mitte.",
-    "Direkter Treffer. Ex dein Getränk oder trinke 6 — deine Wahl, Soldat."
-  ];
+  /* ── Content-Datenbank ─────────────────── */
+  const CATEGORIES = {
+    standard: {
+      label: "Standard",
+      kicker: "Mine getroffen",
+      tasks: [
+        "Sanfter Einstieg. Trinke 2 Schlucke.",
+        "Verteile 3 Schlucke an wen du willst.",
+        "Alle, die heute schon Energy hatten, trinken 1 — du trinkst 2.",
+        "Stoß mit der Person rechts von dir an. Ihr trinkt beide 2.",
+        "Wer von euch zuletzt gelacht hat, trinkt 2 — wenn du es warst, trinke 3.",
+        "Trinke 1 Schluck für jede Person am Tisch, die ein schwarzes Teil trägt."
+      ]
+    },
+    mittel: {
+      label: "Mittel",
+      kicker: "Mine getroffen",
+      tasks: [
+        "Volltreffer. Trinke 4 Schlucke und verteile 2.",
+        "Nenne 5 Festival-Acts in 10 Sekunden oder trinke 4.",
+        "Waterfall: Alle trinken gleichzeitig — du darfst erst aufhören, wenn beide Nachbarn abgesetzt haben.",
+        "Tausche dein Getränk mit der Person links von dir und trinke 3.",
+        "Du übernimmst die Aux bis zur nächsten Mine. Jeder Skip kostet dich 2 Schlucke.",
+        "Alle zeigen auf dich. Trinke so viele Schlucke, wie Finger auf dich zeigen."
+      ]
+    },
+    extrem: {
+      label: "Extrem",
+      kicker: "Mine getroffen",
+      tasks: [
+        "Ex dein Getränk. Keine Diskussion.",
+        "8 Schlucke — oder 10 Liegestütze, hier und jetzt.",
+        "Shot-Time: Du und die Person gegenüber. Sofort.",
+        "Trinke 6 und sprich bis zur nächsten Mine nur im Flüsterton. Jeder Verstoß: 2 extra.",
+        "Doppelzünder: Trinke 5 und bestimme eine Person, die mitzieht.",
+        "Dein Handy liegt bis zur nächsten Mine in der Mitte. Trinke 5 zum Abschied."
+      ]
+    },
+    intim: {
+      label: "+18 Intim",
+      kicker: "Wahrheit oder Trinken",
+      tasks: [
+        "Beantworte ehrlich oder trinke 4: Wer in dieser Runde wäre dein One-Night-Stand?",
+        "Beantworte ehrlich oder trinke 5: Was war dein peinlichster Moment im Bett?",
+        "Beantworte ehrlich oder trinke 6: Dein Body Count — die echte Zahl.",
+        "Beantworte ehrlich oder trinke 4: Hast du schon mal für jemanden hier geschwärmt — und für wen?",
+        "Beantworte ehrlich oder trinke 5: Was ist das Wildeste, das du je gemacht hast?",
+        "Beantworte ehrlich oder trinke 6: Mit wem aus dieser Runde hattest du schon was — oder hättest es gern?"
+      ]
+    }
+  };
 
+  /* ── Sound (Web Audio, ohne Dateien) ───── */
+  let ctx = null;
+
+  function audio() {
+    if (!("AudioContext" in window || "webkitAudioContext" in window)) return null;
+    if (!ctx) {
+      try {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch { return null; }
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  // Safe-Kachel: kurzer, cleaner High-Click
+  function playClick() {
+    const ac = audio();
+    if (!ac) return;
+    const t = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1750, t);
+    osc.frequency.exponentialRampToValueAtTime(1250, t + 0.07);
+    gain.gain.setValueAtTime(0.14, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(t);
+    osc.stop(t + 0.1);
+  }
+
+  // Mine: Sub-Bass-Drop + gefiltertes Explosions-Rauschen
+  function playBoom() {
+    const ac = audio();
+    if (!ac) return;
+    const t = ac.currentTime;
+
+    const sub = ac.createOscillator();
+    const subGain = ac.createGain();
+    sub.type = "sine";
+    sub.frequency.setValueAtTime(150, t);
+    sub.frequency.exponentialRampToValueAtTime(32, t + 0.9);
+    subGain.gain.setValueAtTime(0.9, t);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    sub.connect(subGain).connect(ac.destination);
+    sub.start(t);
+    sub.stop(t + 1.2);
+
+    const dur = 0.8;
+    const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 2;
+    }
+    const noise = ac.createBufferSource();
+    noise.buffer = buffer;
+    const filter = ac.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(3200, t);
+    filter.frequency.exponentialRampToValueAtTime(110, t + dur);
+    const noiseGain = ac.createGain();
+    noiseGain.gain.setValueAtTime(0.55, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    noise.connect(filter).connect(noiseGain).connect(ac.destination);
+    noise.start(t);
+  }
+
+  /* ── Haptik ────────────────────────────── */
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  /* ── Views ─────────────────────────────── */
+  const menuView = document.getElementById("menuView");
+  const gameView = document.getElementById("gameView");
+  let switching = false;
+
+  function showView(next) {
+    const current = document.querySelector(".view.is-active");
+    if (current === next || switching) return;
+    switching = true;
+    current.classList.add("is-leaving");
+    setTimeout(() => {
+      current.classList.remove("is-active", "is-leaving");
+      next.classList.add("is-active");
+      switching = false;
+    }, 280);
+  }
+
+  /* ── Spiel-Logik ───────────────────────── */
   const board = document.getElementById("board");
   const statusEl = document.getElementById("status");
   const penaltyEl = document.getElementById("penalty");
+  const penaltyKicker = document.getElementById("penaltyKicker");
   const penaltyText = document.getElementById("penaltyText");
   const resetBtn = document.getElementById("reset");
+  const backBtn = document.getElementById("backBtn");
 
+  let category = null;
   let mineIndex = -1;
   let remaining = TILE_COUNT;
   let exploded = false;
+  let lastTaskIndex = -1;
 
   function updateStatus() {
-    statusEl.textContent = `${remaining}/${TILE_COUNT} Felder`;
+    statusEl.textContent = `${CATEGORIES[category].label} · ${remaining}/${TILE_COUNT}`;
   }
 
   function buildBoard() {
@@ -313,10 +607,22 @@
     if (i === mineIndex) {
       detonate(tile);
     } else {
+      playClick();
+      vibrate(40);
       tile.classList.add("is-safe");
       remaining -= 1;
       updateStatus();
     }
+  }
+
+  function drawTask() {
+    const tasks = CATEGORIES[category].tasks;
+    let i;
+    do {
+      i = Math.floor(Math.random() * tasks.length);
+    } while (tasks.length > 1 && i === lastTaskIndex);
+    lastTaskIndex = i;
+    return tasks[i];
   }
 
   function detonate(tile) {
@@ -324,24 +630,39 @@
     board.classList.add("is-locked");
     tile.classList.add("is-mine");
 
-    if (navigator.vibrate) navigator.vibrate([120, 60, 200]);
+    playBoom();
+    vibrate([100, 50, 100, 50, 400]);
 
     document.body.classList.add("is-detonating");
     setTimeout(() => document.body.classList.remove("is-detonating"), 750);
 
     setTimeout(() => {
-      penaltyText.textContent =
-        PENALTIES[Math.floor(Math.random() * PENALTIES.length)];
+      penaltyKicker.textContent = CATEGORIES[category].kicker;
+      penaltyText.textContent = drawTask();
       penaltyEl.classList.add("is-visible");
     }, 650);
   }
+
+  /* ── Wiring ────────────────────────────── */
+  document.getElementById("menuList").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-cat]");
+    if (!btn) return;
+    audio(); // AudioContext in der User-Geste entsperren
+    category = btn.dataset.cat;
+    lastTaskIndex = -1;
+    buildBoard();
+    showView(gameView);
+  });
+
+  backBtn.addEventListener("click", () => {
+    penaltyEl.classList.remove("is-visible");
+    showView(menuView);
+  });
 
   resetBtn.addEventListener("click", () => {
     penaltyEl.classList.remove("is-visible");
     buildBoard();
   });
-
-  buildBoard();
 })();
 </script>
 </body>
