@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>SAUF — Das Deck</title>
+<style>
+  :root {
+    --bg: #000000;
+    --fg: #ffffff;
+    --muted: rgba(255, 255, 255, 0.4);
+    --line: rgba(255, 255, 255, 0.14);
+    --card-bg: #0a0a0a;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ───────────────────────────── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: max(20px, env(safe-area-inset-top)) 24px 0;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  header .brand { color: var(--fg); }
+  header .counter {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Stage ────────────────────────────── */
+  main {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    perspective: 1200px;
+  }
+
+  .card {
+    position: relative;
+    width: min(88vw, 420px);
+    aspect-ratio: 3 / 4.2;
+    max-height: 68vh;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 28px;
+    cursor: grab;
+    will-change: transform, opacity;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9);
+  }
+
+  .card:active { cursor: grabbing; }
+
+  .card.is-animating {
+    transition:
+      transform 0.55s cubic-bezier(0.17, 0.67, 0.3, 1),
+      opacity 0.45s ease-out;
+  }
+
+  .card.is-resetting {
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+
+  .card.is-entering {
+    animation: enter 0.45s ease-out both;
+  }
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .card .kicker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card .task {
+    font-size: clamp(26px, 7.5vw, 40px);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .card .index {
+    align-self: flex-end;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── End screen ───────────────────────── */
+  .end {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    background: var(--bg);
+    text-align: center;
+    padding: 24px;
+  }
+
+  .end.is-visible { display: flex; animation: enter 0.5s ease-out both; }
+
+  .end h2 {
+    font-size: clamp(40px, 12vw, 88px);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+
+  .end button {
+    background: var(--fg);
+    color: var(--bg);
+    border: 0;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 18px 44px;
+    cursor: pointer;
+  }
+
+  .end button:active { transform: scale(0.97); }
+
+  /* ── Footer hint ──────────────────────── */
+  footer {
+    padding: 0 24px max(20px, env(safe-area-inset-bottom));
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <span class="brand">SAUF®</span>
+    <span class="counter" id="counter"></span>
+  </header>
+
+  <main id="stage">
+    <article class="card" id="card">
+      <span class="kicker">Aufgabe</span>
+      <p class="task" id="task"></p>
+      <span class="index" id="cardIndex"></span>
+    </article>
+  </main>
+
+  <footer>Swipe zum Weiterspielen</footer>
+
+  <div class="end" id="end">
+    <h2>Deck<br>Leer.</h2>
+    <button id="restart" type="button">Nochmal</button>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const TASKS = [
+    "Wer das teuerste Outfit anhat, verteilt 3 Schlucke.",
+    "Jeder, der heute schon Energy getrunken hat, trinkt 2.",
+    "Der letzte, der sein Handy zückt, verteilt 4 Schlucke.",
+    "Wer schon mal auf einem Festival gezeltet hat, darf 2 Schlucke verteilen.",
+    "Alle mit weißen Sneakern trinken 2 — Respekt an den Mut.",
+    "Wer als Nächstes ein Foto für die Story macht, trinkt 3.",
+    "Line-up-Check: Wer keinen Act des Abends nennen kann, trinkt 5."
+  ];
+
+  const SWIPE_THRESHOLD = 90;     // px, ab hier fliegt die Karte
+  const VELOCITY_THRESHOLD = 0.6; // px/ms, schneller Flick reicht auch
+
+  const card = document.getElementById("card");
+  const taskEl = document.getElementById("task");
+  const counterEl = document.getElementById("counter");
+  const indexEl = document.getElementById("cardIndex");
+  const endEl = document.getElementById("end");
+  const restartBtn = document.getElementById("restart");
+
+  let index = 0;
+  let locked = false;
+
+  const drag = { active: false, startX: 0, startY: 0, dx: 0, dy: 0, startTime: 0 };
+
+  function render() {
+    taskEl.textContent = TASKS[index];
+    counterEl.textContent = `Karte ${index + 1}/${TASKS.length}`;
+    indexEl.textContent = String(index + 1).padStart(2, "0");
+  }
+
+  function setTransform(dx, dy) {
+    const rotate = dx * 0.06;
+    card.style.transform = `translate(${dx}px, ${dy * 0.35}px) rotate(${rotate}deg)`;
+  }
+
+  function showNextCard() {
+    index += 1;
+    if (index >= TASKS.length) {
+      endEl.classList.add("is-visible");
+      return;
+    }
+    render();
+    card.classList.remove("is-animating");
+    card.style.transform = "";
+    card.style.opacity = "";
+    card.classList.add("is-entering");
+    card.addEventListener("animationend", () => {
+      card.classList.remove("is-entering");
+      locked = false;
+    }, { once: true });
+  }
+
+  function flyOut(direction) {
+    locked = true;
+    const distance = window.innerWidth * 1.4;
+    const rotate = 32 * direction;
+    card.classList.add("is-animating");
+    card.style.transform =
+      `translate(${distance * direction}px, ${drag.dy * 0.35 - 60}px) rotate(${rotate}deg)`;
+    card.style.opacity = "0";
+    card.addEventListener("transitionend", showNextCard, { once: true });
+  }
+
+  function snapBack() {
+    card.classList.add("is-resetting");
+    card.style.transform = "";
+    card.addEventListener("transitionend", () => {
+      card.classList.remove("is-resetting");
+    }, { once: true });
+  }
+
+  function onPointerDown(e) {
+    if (locked) return;
+    drag.active = true;
+    drag.startX = e.clientX;
+    drag.startY = e.clientY;
+    drag.dx = 0;
+    drag.dy = 0;
+    drag.startTime = performance.now();
+    card.classList.remove("is-resetting", "is-animating");
+    card.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e) {
+    if (!drag.active || locked) return;
+    drag.dx = e.clientX - drag.startX;
+    drag.dy = e.clientY - drag.startY;
+    setTransform(drag.dx, drag.dy);
+  }
+
+  function onPointerUp() {
+    if (!drag.active || locked) return;
+    drag.active = false;
+    const elapsed = performance.now() - drag.startTime;
+    const velocity = Math.abs(drag.dx) / Math.max(elapsed, 1);
+
+    if (Math.abs(drag.dx) > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+      flyOut(drag.dx >= 0 ? 1 : -1);
+    } else {
+      snapBack();
+    }
+  }
+
+  card.addEventListener("pointerdown", onPointerDown);
+  card.addEventListener("pointermove", onPointerMove);
+  card.addEventListener("pointerup", onPointerUp);
+  card.addEventListener("pointercancel", onPointerUp);
+
+  restartBtn.addEventListener("click", () => {
+    endEl.classList.remove("is-visible");
+    index = -1;
+    locked = false;
+    showNextCard();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
